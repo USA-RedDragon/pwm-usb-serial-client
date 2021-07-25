@@ -1,3 +1,5 @@
 venv/
 proto/*.py
 *.pyc
+__pycache__
+*_pb2.py
