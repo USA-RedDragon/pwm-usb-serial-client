@@ -2,7 +2,6 @@ import serial
 import time
 
 from google import protobuf
-from google.protobuf import json_format
 from cobs import cobs
 
 import state_pb2
