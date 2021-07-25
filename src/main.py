@@ -22,12 +22,22 @@ def main():
             data = b''.join(data)
             deviceState = state_pb2.DeviceState()
             try:
-                print(cobs.decode(data))
                 if deviceState.ParseFromString(cobs.decode(data)):
-                    print(
-                        json_format.MessageToJson(
-                            deviceState, including_default_value_fields=True)
-                    )
+                    print('USB0: ' +
+                          str(deviceState.usb0.power) +
+                          f', Duty Cycle: {deviceState.usb0.dutyCycle}, ' +
+                          'Default State: ' +
+                          str(deviceState.configuration.usb0Restore.power) +
+                          ', Duty Cycle: ' +
+                          str(deviceState.configuration.usb0Restore.dutyCycle))
+                    print('USB1: ' +
+                          str(deviceState.usb1.power) +
+                          f', Duty Cycle: {deviceState.usb1.dutyCycle}, ' +
+                          'Default State: ' +
+                          str(deviceState.configuration.usb1Restore.power) +
+                          ', Duty Cycle: ' +
+                          str(deviceState.configuration.usb1Restore.dutyCycle)
+                          + '\n')
             except protobuf.message.DecodeError as err:
                 print(err)
             except cobs.DecodeError as err:
