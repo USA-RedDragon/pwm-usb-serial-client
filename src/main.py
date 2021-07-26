@@ -12,7 +12,7 @@ import state_pb2
 class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
-        self.serial = serial.Serial('COM7', 9600, timeout=0.1)
+        self.serial = serial.Serial('COM7', 9600, bytesize=8, parity='N', stopbits=1, timeout=1)
         self.deviceState = state_pb2.DeviceState()
         self.serial_thread = threading.Thread(target=self.serial_loop)
         self.serial_thread_stop_event = threading.Event()
@@ -54,8 +54,8 @@ class Application(tk.Frame):
                       str(self.deviceState.configuration.usb1Restore.dutyCycle)
                       + '\n')
                 self.update_ui()
-        except protobuf.message.DecodeError as err:
-            print(err)
+        except protobuf.message.DecodeError as _:
+            print('Received non-proto message: ', proto_message)
 
     def serial_loop(self):
         while not self.serial_thread_stop_event.is_set():
@@ -77,7 +77,7 @@ class Application(tk.Frame):
     def create_widgets(self):
         self.usb0_button = tk.Button(
             self,
-            text="Turn On USB 0",
+            text="Turn on USB 0",
             command=lambda: self.toggle_usb(0))
         self.usb0_button.pack(side="top")
 
@@ -91,7 +91,7 @@ class Application(tk.Frame):
 
         self.usb1_button = tk.Button(
             self,
-            text="Turn On USB 1",
+            text="Turn on USB 1",
             command=lambda: self.toggle_usb(1))
         self.usb1_button.pack(side="bottom")
 
@@ -103,6 +103,12 @@ class Application(tk.Frame):
             command=lambda dc: self.set_duty_cycle(1, dc))
         self.usb1_pwm.pack(side="bottom")
 
+        self.config_button = tk.Button(
+            self,
+            text="Save as power-on defaults",
+            command=self.save_defaults)
+        self.config_button.pack(side="bottom")
+
     def toggle_usb(self, usb_index):
         current_usb_state = getattr(self.deviceState, f"usb{str(usb_index)}")
         print(f"Toggle USB{str(usb_index)}: {not current_usb_state.power}")
@@ -112,7 +118,16 @@ class Application(tk.Frame):
         new_usb_state.power = not current_usb_state.power
         new_usb_state.dutyCycle = current_usb_state.dutyCycle
         getattr(new_state, f"usb{str(usb_index)}").CopyFrom(new_usb_state)
-        self.serial.write(cobs.encode(new_state.SerializeToString()))
+        self.serial.write(cobs.encode(new_state.SerializeToString()) + b'\x00')
+
+    def save_defaults(self):
+        new_state = state_pb2.DeviceState()
+        new_state.CopyFrom(self.deviceState)
+        new_config = state_pb2.Configuration()
+        new_config.usb0Restore.CopyFrom(self.deviceState.usb0)
+        new_config.usb1Restore.CopyFrom(self.deviceState.usb1)
+        new_state.configuration.CopyFrom(new_config)
+        self.serial.write(cobs.encode(new_state.SerializeToString()) + b'\x00')
 
     def set_duty_cycle(self, usb_index, duty_cycle):
         current_usb_state = getattr(self.deviceState, f"usb{str(usb_index)}")
@@ -123,7 +138,7 @@ class Application(tk.Frame):
         new_usb_state.power = current_usb_state.power
         new_usb_state.dutyCycle = int(duty_cycle)
         getattr(new_state, f"usb{str(usb_index)}").CopyFrom(new_usb_state)
-        self.serial.write(cobs.encode(new_state.SerializeToString()))
+        self.serial.write(cobs.encode(new_state.SerializeToString()) + b'\x00')
 
 
 if __name__ == "__main__":
