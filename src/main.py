@@ -25,15 +25,14 @@ class Application(tk.Frame):
     def on_closing(self):
         self.serial_thread_stop_event.set()
         self.serial_thread.join(0.1)
-        self.serial.close()
         self.master.quit()
         self.master.destroy()
 
     def update_ui(self):
         self.usb0_button["text"] = f"Turn {'Off' if self.deviceState.usb0.power else 'On'} USB 0"
         self.usb1_button["text"] = f"Turn {'Off' if self.deviceState.usb1.power else 'On'} USB 1"
-        self.usb0_pwm.set(self.deviceState.usb0.dutyCycle)
-        self.usb1_pwm.set(self.deviceState.usb1.dutyCycle)
+        #self.usb0_pwm.set(self.deviceState.usb0.dutyCycle)
+        #self.usb1_pwm.set(self.deviceState.usb1.dutyCycle)
 
     def parse_message(self, proto_message):
         try:
@@ -72,7 +71,6 @@ class Application(tk.Frame):
                 self.parse_message(proto_message)
             except cobs.DecodeError as err:
                 print(err)
-            time.sleep(0.1)
 
     def create_widgets(self):
         self.usb0_button = tk.Button(
@@ -119,6 +117,7 @@ class Application(tk.Frame):
         new_usb_state.dutyCycle = current_usb_state.dutyCycle
         getattr(new_state, f"usb{str(usb_index)}").CopyFrom(new_usb_state)
         self.serial.write(cobs.encode(new_state.SerializeToString()) + b'\x00')
+        self.serial.flush()
 
     def save_defaults(self):
         new_state = state_pb2.DeviceState()
@@ -128,6 +127,7 @@ class Application(tk.Frame):
         new_config.usb1Restore.CopyFrom(self.deviceState.usb1)
         new_state.configuration.CopyFrom(new_config)
         self.serial.write(cobs.encode(new_state.SerializeToString()) + b'\x00')
+        self.serial.flush()
 
     def set_duty_cycle(self, usb_index, duty_cycle):
         current_usb_state = getattr(self.deviceState, f"usb{str(usb_index)}")
@@ -139,6 +139,7 @@ class Application(tk.Frame):
         new_usb_state.dutyCycle = int(duty_cycle)
         getattr(new_state, f"usb{str(usb_index)}").CopyFrom(new_usb_state)
         self.serial.write(cobs.encode(new_state.SerializeToString()) + b'\x00')
+        self.serial.flush()
 
 
 if __name__ == "__main__":
