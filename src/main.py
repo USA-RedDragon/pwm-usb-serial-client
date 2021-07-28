@@ -29,8 +29,10 @@ class Application(tk.Frame):
         self.master.destroy()
 
     def update_ui(self):
-        self.usb0_button["text"] = f"Turn {'Off' if self.deviceState.usb0.power else 'On'} USB 0"
-        self.usb1_button["text"] = f"Turn {'Off' if self.deviceState.usb1.power else 'On'} USB 1"
+        self.usb0_button["text"] = \
+            f"Turn {'Off' if self.deviceState.usb0.power else 'On'} USB 0"
+        self.usb1_button["text"] = \
+            f"Turn {'Off' if self.deviceState.usb1.power else 'On'} USB 1"
         #self.usb0_pwm.set(self.deviceState.usb0.dutyCycle)
         #self.usb1_pwm.set(self.deviceState.usb1.dutyCycle)
 
@@ -53,7 +55,7 @@ class Application(tk.Frame):
                       str(self.deviceState.configuration.usb1Restore.dutyCycle)
                       + '\n')
                 self.update_ui()
-        except protobuf.message.DecodeError as _:
+        except protobuf.message.DecodeError:
             print('Received non-proto message: ', proto_message)
 
     def serial_loop(self):
@@ -134,9 +136,9 @@ class Application(tk.Frame):
         print(f"Set USB{str(usb_index)} Duty Cycle: {duty_cycle}")
         new_state = state_pb2.DeviceState()
         new_state.CopyFrom(self.deviceState)
-        new_usb_state = state_pb2.PowerState()
-        new_usb_state.power = current_usb_state.power
-        new_usb_state.dutyCycle = int(duty_cycle)
+        new_usb_state = state_pb2.PowerState(
+            power=current_usb_state.power,
+            dutyCycle=int(duty_cycle))
         getattr(new_state, f"usb{str(usb_index)}").CopyFrom(new_usb_state)
         self.serial.write(cobs.encode(new_state.SerializeToString()) + b'\x00')
         self.serial.flush()
