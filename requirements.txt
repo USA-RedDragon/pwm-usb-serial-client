@@ -2,6 +2,6 @@ flake8==3.9.2
 mccabe==0.6.1
 protobuf==3.17.3
 pycodestyle==2.7.0
-pyflakes==2.3.1
+pyflakes==3.2.0
 pyserial==3.5
 six==1.16.0
