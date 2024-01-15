@@ -1,4 +1,4 @@
-flake8==3.9.2
+flake8==7.0.0
 mccabe==0.6.1
 protobuf==3.17.3
 pycodestyle==2.7.0
